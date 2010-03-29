@@ -1,6 +1,7 @@
 #!/usr/bin/ruby -Ku
 
 require 'rubygems'
+require 'webrick'
 require 'net/http'
 require 'uri'
 require 'json'
@@ -47,12 +48,16 @@ PASSWORD = CONFIG['password']
 
 twitter = Twitter::Base.new(Twitter::HTTPAuth.new(ACCOUNT, PASSWORD))
 
-Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
-  next unless status['text'] && status['text'] =~ /[ぁ-んァ-ヶ]/
-  user = status['user']
-  next if user['screen_name'] == ACCOUNT
-  text = status['text'].gsub(/([\@\#])(\w+)/) {"#{$1}{#{$2}}"}
-  content = "RT $#{user['screen_name']}: #{text}".match(/\A.{1,140}/)[0]
-  twitter.update content
+WEBrick::Daemon.start do
+  loop do
+    Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
+      next unless status['text'] && status['text'] =~ /[ぁ-んァ-ヶ]/
+      user = status['user']
+      next if user['screen_name'] == ACCOUNT
+      text = status['text'].gsub(/([\@\#])(\w+)/) {"#{$1}{#{$2}}"}
+      content = "RT $#{user['screen_name']}: #{text}".match(/\A.{1,140}/)[0]
+      twitter.update content
+    end
+  end
 end
 
