@@ -52,10 +52,10 @@ WEBrick::Daemon.start do
   loop do
     Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
       text = status['text']
-      next unless text && text =~ /[ぁ-んァ-ヶ]/ && text !~ /#{ACCOUNT}/
+      next unless text && text =~ /[ぁ-んァ-ヶ]/ && text !~ /\@#{ACCOUNT}/
       user = status['user']
       next if user['screen_name'] == ACCOUNT
-      text = text.gsub(/([\@\#])(\w+)/) {"#{$1}{#{$2}}"}
+      text = text.gsub(/([\@\#])([[:alnum:]_]+)/) {"#{$1}{#{$2}}"}
       content = "RT $#{user['screen_name']}: #{text}".match(/\A.{1,140}/)[0]
       twitter.update content
     end
