@@ -50,14 +50,17 @@ twitter = Twitter::Base.new(Twitter::HTTPAuth.new(ACCOUNT, PASSWORD))
 
 WEBrick::Daemon.start do
   loop do
-    Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
-      text = status['text']
-      next unless text && text =~ /[ぁ-んァ-ヶ]/ && text !~ /\@#{ACCOUNT}/
-      user = status['user']
-      next if user['screen_name'] == ACCOUNT
-      text = text.gsub(/([\@\#])([[:alnum:]_]+)/) {"#{$1}{#{$2}}"}
-      content = "RT $#{user['screen_name']}: #{text}".match(/\A.{1,140}/)[0]
-      twitter.update content
+    begin
+      Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
+        text = status['text']
+        next unless text && text =~ /[ぁ-んァ-ヶ]/ && text !~ /\@#{ACCOUNT}/
+        screen_name = status['user']['screen_name']
+        next if screen_name == ACCOUNT
+        text = text.gsub(/([\@\#])([[:alnum:]_]+)/) {"#{$1}{#{$2}}"}
+        content = "RT $#{screen_name}: #{text}".match(/\A.{1,140}/)[0]
+        twitter.update content
+      end
+    rescue 
     end
   end
 end
