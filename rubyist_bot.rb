@@ -52,6 +52,7 @@ begin
   Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
     text = status['text']
     next unless text && text =~ /[ぁ-んァ-ヶ]/
+    next if text =~ /\ART\:/
     twitter.retweet status['id']
   end
 rescue
