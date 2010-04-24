@@ -50,10 +50,11 @@ twitter = Twitter::Base.new(Twitter::HTTPAuth.new(ACCOUNT, PASSWORD))
 
 begin
   Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
-    id=status['id']
-    twitter.retweet(id)
+    text = status['text']
+    next unless text && text =~ /[ぁ-んァ-ヶ]/
+    twitter.retweet status['id']
   end
-rescue 
+rescue
   retry
 end
 
