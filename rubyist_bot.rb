@@ -58,7 +58,7 @@ begin
     screen_name = status['user']['screen_name']
     next if screen_name == ACCOUNT
     text = text.gsub(/([\@\#])([[:alnum:]_]+)/) {"#{$1}{#{$2}}"}
-    text = text.gsub(/([^[:alnum:]_])(#{KEYWORD})([^[:alnum:]_])/i) {
+    text = text.gsub(/([^[:alnum:]_\A])(#{KEYWORD})([^[:alnum:]_\Z])/i) {
       "#{$1}#{$2.tr("A-Za-z", "Ａ-Ｚａ-ｚ")}#{$3}"
     }
     content = "RT $#{screen_name}: #{text}".match(/\A.{1,140}/)[0]
