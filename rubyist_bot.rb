@@ -62,7 +62,7 @@ begin
       "#{$1}#{$2.tr("A-Za-z", "Ａ-Ｚａ-ｚ")}#{$3}"
     }
     content = "RT $#{screen_name}: #{text}"
-    content = "#{content.match(/\A.{137}/m)[0]}..." if content.size > 140
+    content = "#{content.match(/\A.{137}/m)[0]}..." if content.split(//).size > 140
     twitter.update content
   end
 rescue
