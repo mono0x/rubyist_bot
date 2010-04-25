@@ -46,9 +46,16 @@ CONFIG = JSON.parse(open('config.json').read)
 
 ACCOUNT = CONFIG['account']
 PASSWORD = CONFIG['password']
+CONSUMER_TOKEN = CONFIG['consumer_token']
+CONSUMER_SECRET = CONFIG['consumer_secret']
+ACCESS_TOKEN = CONFIG['access_token']
+ACCESS_SECRET = CONFIG['access_secret']
+
 KEYWORD = 'ruby'
 
-twitter = Twitter::Base.new(Twitter::HTTPAuth.new(ACCOUNT, PASSWORD))
+oauth = Twitter::OAuth.new(CONSUMER_TOKEN, CONSUMER_SECRET)
+oauth.authorize_from_access ACCESS_TOKEN, ACCESS_SECRET
+twitter = Twitter::Base.new(oauth)
 
 begin
   Tracker.start(ACCOUNT, PASSWORD, KEYWORD) do |status|
