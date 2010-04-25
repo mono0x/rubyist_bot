@@ -61,7 +61,8 @@ begin
     text = text.gsub(/([^[:alnum:]_]|\A)(#{KEYWORD})([^[:alnum:]_]|\Z)/i) {
       "#{$1}#{$2.tr("A-Za-z", "Ａ-Ｚａ-ｚ")}#{$3}"
     }
-    content = "RT $#{screen_name}: #{text}".match(/\A.{1,140}/m)[0]
+    content = "RT $#{screen_name}: #{text}"
+    content = content.match(/\A.{137}.../m)[0] if content.size > 140
     twitter.update content
   end
 rescue
