@@ -6,6 +6,7 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'twitter'
+require 'jcode'
 
 class Tracker
 
@@ -45,17 +46,21 @@ CONFIG = JSON.parse(open('config.json').read)
 
 ACCOUNT = CONFIG['account']
 PASSWORD = CONFIG['password']
+KEYWORD = 'ruby'
 
 twitter = Twitter::Base.new(Twitter::HTTPAuth.new(ACCOUNT, PASSWORD))
 
 begin
-  Tracker.start(ACCOUNT, PASSWORD, 'ruby') do |status|
+  Tracker.start(ACCOUNT, PASSWORD, KEYWORD) do |status|
     text = status['text']
     next unless text && text =~ /[ぁ-んァ-ヶ]/ && text !~ /\@#{ACCOUNT}/
     next if text =~ /\ART/
     screen_name = status['user']['screen_name']
     next if screen_name == ACCOUNT
     text = text.gsub(/([\@\#])([[:alnum:]_]+)/) {"#{$1}{#{$2}}"}
+    text = text.gsub(/([^[:alnum:]_])(#{KEYWORD})([^[:alnum:]_])/i) {
+      "#{$1}#{$2.tr("A-Za-z", "Ａ-Ｚａ-ｚ")}#{$3}"
+    }
     content = "RT $#{screen_name}: #{text}".match(/\A.{1,140}/)[0]
     twitter.update content
   end
