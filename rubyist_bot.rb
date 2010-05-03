@@ -1,4 +1,5 @@
 #!/usr/bin/ruby -Ku
+# coding: utf-8
 
 require 'rubygems'
 require 'webrick'
@@ -6,7 +7,6 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'twitter'
-require 'jcode'
 
 class Tracker
 
