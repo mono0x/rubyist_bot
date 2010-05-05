@@ -42,7 +42,7 @@ class Tracker
 
 end
 
-CONFIG = JSON.parse(open('config.json').read)
+CONFIG = JSON.parse(open('config.json', 'r:utf-8').read)
 
 ACCOUNT = CONFIG['account']
 PASSWORD = CONFIG['password']
@@ -50,6 +50,8 @@ CONSUMER_TOKEN = CONFIG['consumer_token']
 CONSUMER_SECRET = CONFIG['consumer_secret']
 ACCESS_TOKEN = CONFIG['access_token']
 ACCESS_SECRET = CONFIG['access_secret']
+BLOCK_WORDS = CONFIG['block']['word']
+BLOCK_NAMES = CONFIG['block']['screen_name']
 
 KEYWORD = 'ruby'
 
@@ -62,8 +64,10 @@ begin
     text = status['text']
     next unless text && text =~ /[ぁ-んァ-ヶ]/ && text !~ /\@#{ACCOUNT}/
     next if text =~ /\ART/
+    next if BLOCK_WORDS.any?{|w| text[w]}
     screen_name = status['user']['screen_name']
     next if screen_name == ACCOUNT
+    next if BLOCK_NAMES.any?{|n| screen_name[n]}
     text = text.gsub(/([\@\#])([[:alnum:]_]+)/) {"#{$1}{#{$2}}"}
     text = text.gsub(/([^[:alnum:]_]|\A)(#{KEYWORD})([^[:alnum:]_]|\Z)/i) {
       "#{$1}#{$2.tr("A-Za-z", "Ａ-Ｚａ-ｚ")}#{$3}"

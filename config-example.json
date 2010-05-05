@@ -4,6 +4,10 @@
   "consumer_token" : "Your Consumer key",
   "consumer_secret" : "Your Consumer secret",
   "access_token" : "Your Access token",
-  "access_secret" : "Your Access secret"
+  "access_secret" : "Your Access secret",
+  "block" : {
+    "word" : [],
+    "screen_name" : []
+  }
 }
 
