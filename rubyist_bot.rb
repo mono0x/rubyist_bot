@@ -62,15 +62,15 @@ twitter = Twitter::Base.new(oauth)
 begin
   Tracker.start(ACCOUNT, PASSWORD, KEYWORD) do |status|
     text = status['text']
-    next unless text && text =~ /[ぁ-んァ-ヶ]/ && text !~ /\@#{ACCOUNT}/
+    next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{ACCOUNT}/
     next if text =~ /\ART/
     next if BLOCK_WORDS.any?{|w| text[w]}
     screen_name = status['user']['screen_name']
     next if screen_name == ACCOUNT
     next if BLOCK_NAMES.any?{|n| screen_name[n]}
     text = text.gsub(/([\@\#])([[:alnum:]_]+)/) {"#{$1}{#{$2}}"}
-    text = text.gsub(/([^[:alnum:]_]|\A)(#{KEYWORD})([^[:alnum:]_]|\Z)/i) {
-      "#{$1}#{$2.tr("A-Za-z", "Ａ-Ｚａ-ｚ")}#{$3}"
+    text = text.gsub(/(?<=^|[^\w])(#{KEYWORD})(?=$|[^\w])/i) {
+      $1.tr("A-Za-z", "Ａ-Ｚａ-ｚ")
     }
     content = "RT $#{screen_name}: #{text}"
     content = "#{content.match(/\A.{137}/m)[0]}..." if content.split(//).size > 140
