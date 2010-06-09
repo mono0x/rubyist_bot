@@ -6,6 +6,10 @@
   "access_token" : "Your Access token",
   "access_secret" : "Your Access secret",
   "block" : {
+    "similarity" : {
+      "samples" : 500,
+      "threshold" : 0.4
+    },
     "word" : [],
     "screen_name" : []
   }
