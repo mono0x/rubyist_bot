@@ -1,6 +1,7 @@
 #!/usr/bin/ruby -Ku
 # coding: utf-8
 
+require 'logger'
 require 'webrick'
 require 'net/http'
 require 'uri'
@@ -11,12 +12,13 @@ class Tracker
 
   TRACK_URI = URI.parse('http://stream.twitter.com/1/statuses/filter.json')
 
-  attr_accessor :account, :password, :track
+  attr_accessor :account, :password, :track, :log
 
-  def initialize(account, password, track)
+  def initialize(account, password, track, log = nil)
     @account = account
     @password = password
     @track = track
+    @log = log
   end
 
   def start(&block)
@@ -27,15 +29,20 @@ class Tracker
       http.request(request) do |response|
         raise 'Response is not chuncked' unless response.chunked?
         response.read_body do |chunk|
-          block.call JSON.parse(chunk) rescue next
+          begin
+            block.call JSON.parse(chunk)
+          rescue JSON::ParserError
+          rescue
+            @log.error $! if @log
+          end
         end
       end
     end
   end
 
   class << self
-    def start(account, password, track, &block)
-      Tracker.new(account, password, track).start &block
+    def start(account, password, track, log, &block)
+      Tracker.new(account, password, track, log).start &block
     end
   end
 
@@ -76,6 +83,8 @@ def similarity(lhs, rhs)
   max > 0 ? 1.0 - levenshtein_distance(lhs, rhs).to_f / max : 1.0
 end
 
+log = Logger.new(STDERR)
+
 CONFIG = JSON.parse(open('config.json', 'r:utf-8').read)
 
 ACCOUNT = CONFIG['account']
@@ -98,7 +107,7 @@ twitter = Twitter::Base.new(oauth)
 samples = []
 
 begin
-  Tracker.start(ACCOUNT, PASSWORD, KEYWORD) do |status|
+  Tracker.start(ACCOUNT, PASSWORD, KEYWORD, log) do |status|
     text = status['text']
     next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{ACCOUNT}/
     next if text =~ /\ART/
@@ -121,6 +130,7 @@ begin
     twitter.update content
   end
 rescue
+  log.error $!
   retry
 end
 
