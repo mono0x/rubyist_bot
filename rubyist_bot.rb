@@ -1,7 +1,6 @@
 #!/usr/bin/ruby -Ku
 # coding: utf-8
 
-require 'rubygems'
 require 'webrick'
 require 'net/http'
 require 'uri'
@@ -118,7 +117,7 @@ begin
       $1.tr("A-Za-z", "Ａ-Ｚａ-ｚ")
     }
     content = "RT $#{screen_name}: #{text}"
-    content = "#{content.match(/\A.{137}/m)[0]}..." if content.split(//).size > 140
+    content = "#{content.match(/\A.{137}/m)[0]}..." if content.size > 140
     twitter.update content
   end
 rescue
