@@ -2,7 +2,6 @@
 # coding: utf-8
 
 require 'logger'
-require 'webrick'
 require 'net/http'
 require 'uri'
 require 'json'
