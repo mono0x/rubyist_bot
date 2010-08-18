@@ -108,7 +108,7 @@ BLOCK_WORDS = CONFIG['block']['word']
 BLOCK_NAMES = CONFIG['block']['screen_name']
 KEYWORDS = CONFIG['keywords']
 
-KEYWORDS_RE = Regexp.union(KEYWORDS)
+KEYWORDS_RE = Regexp.union(KEYWORDS.map{|k| /#{k}/i})
 
 oauth = Twitter::OAuth.new(CONSUMER_TOKEN, CONSUMER_SECRET)
 oauth.authorize_from_access ACCESS_TOKEN, ACCESS_SECRET
