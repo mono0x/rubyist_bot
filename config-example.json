@@ -9,6 +9,14 @@
     "account" : "Your account",
     "api_key" : "Your API key"
   },
+  "keywords" : [
+    "ruby",
+    "jruby",
+    "rubinius",
+    "macruby",
+    "ironruby",
+    "rails"
+  ],
   "block" : {
     "similarity" : {
       "samples" : 500,

@@ -106,8 +106,9 @@ BLOCK_SIMILARITY_SAMPLES = CONFIG['block']['similarity']['samples']
 BLOCK_SIMILARITY_THRESHOLD = CONFIG['block']['similarity']['threshold']
 BLOCK_WORDS = CONFIG['block']['word']
 BLOCK_NAMES = CONFIG['block']['screen_name']
+KEYWORDS = CONFIG['keywords']
 
-KEYWORD = 'ruby'
+KEYWORDS_RE = Regexp.union(KEYWORDS)
 
 oauth = Twitter::OAuth.new(CONSUMER_TOKEN, CONSUMER_SECRET)
 oauth.authorize_from_access ACCESS_TOKEN, ACCESS_SECRET
@@ -116,7 +117,7 @@ twitter = Twitter::Base.new(oauth)
 samples = []
 
 begin
-  Tracker.start(ACCOUNT, PASSWORD, KEYWORD, log) do |status|
+  Tracker.start(ACCOUNT, PASSWORD, KEYWORDS.join(','), log) do |status|
     text = status['text']
     next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{ACCOUNT}/
     next if text =~ /\ART/
@@ -124,14 +125,14 @@ begin
     screen_name = status['user']['screen_name']
     next if screen_name == ACCOUNT
     next if BLOCK_NAMES.any?{|n| screen_name[n]}
-    text_without_uri = remove_uri(text).tr('A-Z', 'a-z').gsub(KEYWORD, '')
+    text_without_uri = remove_uri(text).tr('A-Z', 'a-z').gsub(KEYWORDS_RE, '')
     next if samples.any? {|t|
       similarity(t, text_without_uri) > BLOCK_SIMILARITY_THRESHOLD
     }
     samples.shift if samples.size >= BLOCK_SIMILARITY_SAMPLES 
     samples.push text_without_uri
     text = text.gsub(/([\@\#])(\w+)/) {"#{$1}{#{$2}}"}
-    text = text.gsub(/(?<=^|[^\w])(#{KEYWORD})(?=$|[^\w])/i) {
+    text = text.gsub(/(?<=^|[^\w])(#{KEYWORDS_RE})(?=$|[^\w])/i) {
       $1.tr("A-Za-z", "Ａ-Ｚａ-ｚ")
     }
     via = " /via #{shorten_uri("http://twitter.com/#{screen_name}/status/#{status['id']}", BIT_LY_ACCOUNT, BIT_LY_API_KEY)}"
