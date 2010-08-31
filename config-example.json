@@ -5,10 +5,6 @@
   "consumer_secret" : "Your Consumer secret",
   "access_token" : "Your Access token",
   "access_secret" : "Your Access secret",
-  "bit_ly" : {
-    "account" : "Your account",
-    "api_key" : "Your API key"
-  },
   "keywords" : [
     "ruby",
     "jruby",

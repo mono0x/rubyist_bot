@@ -83,12 +83,6 @@ def similarity(lhs, rhs)
   max > 0 ? 1.0 - levenshtein_distance(lhs, rhs).to_f / max : 1.0
 end
 
-def shorten_uri(uri, user_id, api_key)
-  q = "version=2.0.1&longUrl=#{URI.escape(uri)}&login=#{user_id}&apiKey=#{api_key}"
-  json = JSON.parse(open("http://api.bit.ly/shorten?#{q}").read)
-  json['results'][uri]['shortUrl']
-end
-
 log = Logger.new(STDERR)
 
 CONFIG = JSON.parse(open('config.json', 'r:utf-8').read)
@@ -99,9 +93,6 @@ CONSUMER_TOKEN = CONFIG['consumer_token']
 CONSUMER_SECRET = CONFIG['consumer_secret']
 ACCESS_TOKEN = CONFIG['access_token']
 ACCESS_SECRET = CONFIG['access_secret']
-BIT_LY = CONFIG['bit_ly']
-BIT_LY_ACCOUNT = BIT_LY['account']
-BIT_LY_API_KEY = BIT_LY['api_key']
 BLOCK_SIMILARITY_SAMPLES = CONFIG['block']['similarity']['samples']
 BLOCK_SIMILARITY_THRESHOLD = CONFIG['block']['similarity']['threshold']
 BLOCK_WORDS = CONFIG['block']['word']
@@ -131,16 +122,10 @@ begin
     }
     samples.shift if samples.size >= BLOCK_SIMILARITY_SAMPLES 
     samples.push text_without_uri
-    text = text.gsub(/([\@\#])(\w+)/) {"#{$1}{#{$2}}"}
-    text = text.gsub(/(?<=^|[^\w])(#{KEYWORDS_RE})(?=$|[^\w])/i) {
-      $1.tr("A-Za-z", "Ａ-Ｚａ-ｚ")
-    }
-    via = " /via #{shorten_uri("http://twitter.com/#{screen_name}/status/#{status['id']}", BIT_LY_ACCOUNT, BIT_LY_API_KEY)}"
-    content = "RT $#{screen_name}: #{text}"
-    if content.size + via.size > 140
-      content = "#{content[0, 137 - via.size]}..."
+    begin
+      twitter.retweet status['id']
+    rescue Twitter::General
     end
-    twitter.update "#{content}#{via}"
   end
 rescue
   log.error $!
