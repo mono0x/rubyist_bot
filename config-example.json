@@ -1,6 +1,5 @@
 {
   "account" : "Your Twitter ID",
-  "password" : "Your Twitter Password",
   "consumer_token" : "Your Consumer key",
   "consumer_secret" : "Your Consumer secret",
   "access_token" : "Your Access token",

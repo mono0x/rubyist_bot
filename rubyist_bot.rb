@@ -7,16 +7,18 @@ require 'uri'
 require 'json'
 require 'twitter'
 require 'open-uri'
+require 'oauth'
+require 'oauth/client/net_http'
 
 class Tracker
 
   TRACK_URI = URI.parse('http://stream.twitter.com/1/statuses/filter.json')
 
-  attr_accessor :account, :password, :track, :log
+  attr_accessor :consumer, :access_token, :track, :log
 
-  def initialize(account, password, track, log = nil)
-    @account = account
-    @password = password
+  def initialize(consumer, access_token, track, log = nil)
+    @consumer = consumer
+    @access_token = access_token
     @track = track
     @log = log
   end
@@ -25,7 +27,7 @@ class Tracker
     Net::HTTP.start(TRACK_URI.host, TRACK_URI.port) do |http|
       request = Net::HTTP::Post.new(TRACK_URI.request_uri)
       request.set_form_data 'track' => @track
-      request.basic_auth @account, @password
+      request.oauth! http, @consumer, @access_token
       http.request(request) do |response|
         raise 'Response is not chuncked' unless response.chunked?
         response.read_body do |chunk|
@@ -41,8 +43,8 @@ class Tracker
   end
 
   class << self
-    def start(account, password, track, log, &block)
-      Tracker.new(account, password, track, log).start(&block)
+    def start(consumer, access_token, track, log, &block)
+      Tracker.new(consumer, access_token, track, log).start(&block)
     end
   end
 
@@ -105,10 +107,13 @@ oauth = Twitter::OAuth.new(CONSUMER_TOKEN, CONSUMER_SECRET)
 oauth.authorize_from_access ACCESS_TOKEN, ACCESS_SECRET
 twitter = Twitter::Base.new(oauth)
 
+consumer = OAuth::Consumer.new(CONSUMER_TOKEN, CONSUMER_SECRET)
+access_token = OAuth::AccessToken.new(consumer, ACCESS_TOKEN, ACCESS_SECRET)
+
 samples = []
 
 begin
-  Tracker.start(ACCOUNT, PASSWORD, KEYWORDS.join(','), log) do |status|
+  Tracker.start(consumer, access_token, KEYWORDS.join(','), log) do |status|
     text = status['text']
     next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{ACCOUNT}/
     next if text =~ /\ART/
