@@ -42,7 +42,7 @@ class Tracker
 
   class << self
     def start(account, password, track, log, &block)
-      Tracker.new(account, password, track, log).start &block
+      Tracker.new(account, password, track, log).start(&block)
     end
   end
 
