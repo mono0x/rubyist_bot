@@ -13,6 +13,7 @@
     "rails"
   ],
   "block" : {
+    "length" : 50,
     "similarity" : {
       "samples" : 500,
       "threshold" : 0.4

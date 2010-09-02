@@ -95,6 +95,7 @@ CONSUMER_TOKEN = CONFIG['consumer_token']
 CONSUMER_SECRET = CONFIG['consumer_secret']
 ACCESS_TOKEN = CONFIG['access_token']
 ACCESS_SECRET = CONFIG['access_secret']
+BLOCK_LENGTH = CONFIG['block']['length']
 BLOCK_SIMILARITY_SAMPLES = CONFIG['block']['similarity']['samples']
 BLOCK_SIMILARITY_THRESHOLD = CONFIG['block']['similarity']['threshold']
 BLOCK_WORDS = CONFIG['block']['word']
@@ -116,7 +117,7 @@ begin
   Tracker.start(consumer, access_token, KEYWORDS.join(','), log) do |status|
     text = status['text']
     next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{ACCOUNT}/
-    next if text =~ /\ART/
+    next if text.match(/\A(.*?)(?:[RQ]T|\z)/)[1].size < BLOCK_LENGTH
     next if BLOCK_WORDS.any?{|w| text[w]}
     screen_name = status['user']['screen_name']
     next if screen_name == ACCOUNT
