@@ -77,7 +77,7 @@ def levenshtein_distance(lhs, rhs)
 end
 
 def remove_uri(src)
-  src.gsub URI.regexp(['http', 'https']), ''
+  src.gsub %r!https?://.+?(?:/|$|\s|[^\w])!, ''
 end
 
 def similarity(lhs, rhs)
