@@ -2,50 +2,66 @@
 # coding: utf-8
 
 require 'logger'
-require 'net/http'
 require 'uri'
 require 'json'
-require 'twitter'
-require 'open-uri'
+require 'eventmachine'
+require 'em-http'
 require 'oauth'
-require 'oauth/client/net_http'
+require 'oauth/client/em_http'
+require 'twitter/json_stream'
+
+class EventMachine::HttpClient
+  def normalize_uri
+    @normalized_uri ||= begin
+      uri = @uri.dup
+      encoded_query = encode_query(@uri, @options[:query])
+      path, query = encoded_query.split("?", 2)
+      uri.query = query unless encoded_query.empty?
+      uri.path  = path
+      uri
+    end
+  end
+end
 
 class Tracker
 
-  TRACK_URI = URI.parse('http://stream.twitter.com/1/statuses/filter.json')
-
-  attr_accessor :consumer, :access_token, :track, :log
-
-  def initialize(consumer, access_token, track, log = nil)
-    @consumer = consumer
+  def initialize(consumer_token, consumer_secret, access_token, access_secret, track)
+    @consumer_token = consumer_token
+    @consumer_secret = consumer_secret
     @access_token = access_token
+    @access_secret = access_secret
     @track = track
-    @log = log
   end
 
   def start(&block)
-    Net::HTTP.start(TRACK_URI.host, TRACK_URI.port) do |http|
-      request = Net::HTTP::Post.new(TRACK_URI.request_uri)
-      request.set_form_data 'track' => @track
-      request.oauth! http, @consumer, @access_token
-      http.request(request) do |response|
-        raise 'Response is not chuncked' unless response.chunked?
-        response.read_body do |chunk|
-          begin
-            block.call JSON.parse(chunk)
-          rescue JSON::ParserError
-          rescue
-            @log.error $! if @log
-          end
-        end
-      end
+    stream = Twitter::JSONStream.connect(
+      :filters => @track,
+      :oauth => {
+        :consumer_key => @consumer_token,
+        :consumer_secret => @consumer_secret,
+        :access_key => @access_token,
+        :access_secret => @access_secret,
+      })
+
+    stream.each_item do |item|
+      block.call JSON.parse(item)
+    end
+
+    stream.on_error do |m|
+      @on_error.call m if @on_error
+    end
+
+    stream.on_max_reconnects do |timeout, retries|
+      @on_max_reconnects.call timeout, retries if @on_max_reconnects
     end
   end
 
-  class << self
-    def start(consumer, access_token, track, log, &block)
-      Tracker.new(consumer, access_token, track, log).start(&block)
-    end
+  def on_error(&block)
+    @on_error = block
+  end
+
+  def on_max_reconnects(&block)
+    @on_max_reconnects = block
   end
 
 end
@@ -104,33 +120,50 @@ KEYWORDS = CONFIG['keywords']
 
 KEYWORDS_RE = Regexp.union(KEYWORDS.map{|k| /#{k}/i})
 
-oauth = Twitter::OAuth.new(CONSUMER_TOKEN, CONSUMER_SECRET)
-oauth.authorize_from_access ACCESS_TOKEN, ACCESS_SECRET
-twitter = Twitter::Base.new(oauth)
-
 consumer = OAuth::Consumer.new(CONSUMER_TOKEN, CONSUMER_SECRET)
 access_token = OAuth::AccessToken.new(consumer, ACCESS_TOKEN, ACCESS_SECRET)
 
 samples = []
 
 begin
-  Tracker.start(consumer, access_token, KEYWORDS.join(','), log) do |status|
-    text = status['text']
-    next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{ACCOUNT}/
-    next if text.match(/\A(.*?)(?:[RQ]T|\z)/)[1].size < BLOCK_LENGTH
-    next if BLOCK_WORDS.any?{|w| text[w]}
-    screen_name = status['user']['screen_name']
-    next if screen_name == ACCOUNT
-    next if BLOCK_NAMES.any?{|n| screen_name[n]}
-    text_without_uri = remove_uri(text).tr('A-Z', 'a-z').gsub(KEYWORDS_RE, '')
-    next if samples.any? {|t|
-      similarity(t, text_without_uri) > BLOCK_SIMILARITY_THRESHOLD
-    }
-    samples.shift if samples.size >= BLOCK_SIMILARITY_SAMPLES 
-    samples.push text_without_uri
-    begin
-      twitter.retweet status['id']
-    rescue Twitter::General
+  EventMachine.run do
+    tracker = Tracker.new(CONSUMER_TOKEN, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_SECRET, KEYWORDS)
+    tracker.start do |status|
+      text = status['text']
+      next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{ACCOUNT}/
+      next if text =~ /#\w+/
+      next if text.match(/\A(.*?)(?:[RQ]T|\z)/)[1].size < BLOCK_LENGTH
+      next if BLOCK_WORDS.any?{|w| text[w]}
+      screen_name = status['user']['screen_name']
+      next if screen_name == ACCOUNT
+      next if BLOCK_NAMES.any?{|n| screen_name[n]}
+      text_without_uri = remove_uri(text).tr('A-Z', 'a-z').gsub(KEYWORDS_RE, '')
+      next if samples.any? {|t|
+        similarity(t, text_without_uri) > BLOCK_SIMILARITY_THRESHOLD
+      }
+      samples.shift if samples.size >= BLOCK_SIMILARITY_SAMPLES
+      samples.push text_without_uri
+
+      req = EventMachine::HttpRequest.new('http://api.twitter.com/1/users/show.json')
+      http = req.get(:query => { 'user_id' => status['user']['id'] }) do |client|
+        consumer.sign! client, access_token
+      end
+      http.callback do
+        if http.response_header.status == 200
+          uri = "http://api.twitter.com/1/statuses/retweet/#{status['id']}.json"
+          http = EventMachine::HttpRequest.new(uri).post(:head => { 'Content-Type' => 'application/x-www-form-urlencoded' }) do |client|
+            consumer.sign! client, access_token
+          end
+        end
+      end
+    end
+    tracker.on_error do |m|
+      log.info m
+      EventMachine.stop if EventMachine.reactor_running?
+    end
+    tracker.on_max_reconnects do |timeout, retries|
+      log.info "max reconnects #{timeout} : #{retries}"
+      EventMachine.stop if EventMachine.reactor_running?
     end
   end
 rescue
