@@ -10,6 +10,9 @@ require 'oauth'
 require 'oauth/client/em_http'
 require 'twitter/json_stream'
 
+require_relative 'tweetstorage'
+require_relative 'bayes'
+
 class EventMachine::HttpClient
   def normalize_uri
     @normalized_uri ||= begin
@@ -111,6 +114,7 @@ CONSUMER_TOKEN = CONFIG['consumer_token']
 CONSUMER_SECRET = CONFIG['consumer_secret']
 ACCESS_TOKEN = CONFIG['access_token']
 ACCESS_SECRET = CONFIG['access_secret']
+TOKYO_TYRANT = CONFIG['tokyo_tyrant']
 BLOCK_LENGTH = CONFIG['block']['length']
 BLOCK_SIMILARITY_SAMPLES = CONFIG['block']['similarity']['samples']
 BLOCK_SIMILARITY_THRESHOLD = CONFIG['block']['similarity']['threshold']
@@ -124,6 +128,10 @@ consumer = OAuth::Consumer.new(CONSUMER_TOKEN, CONSUMER_SECRET)
 access_token = OAuth::AccessToken.new(consumer, ACCESS_TOKEN, ACCESS_SECRET)
 
 samples = []
+
+storage = TweetStorage.new(TOKYO_TYRANT['host'], TOKYO_TYRANT['port'])
+
+bayes = Bayes.new('bayes.dat')
 
 begin
   EventMachine.run do
@@ -143,6 +151,13 @@ begin
       }
       samples.shift if samples.size >= BLOCK_SIMILARITY_SAMPLES
       samples.push text_without_uri
+
+      storage.append status
+
+      if bayes.loaded?
+        log.info status['text']
+        next unless bayes.classify(status['text'])
+      end
 
       req = EventMachine::HttpRequest.new('http://api.twitter.com/1/users/show.json')
       http = req.get(:query => { 'user_id' => status['user']['id'] }) do |client|

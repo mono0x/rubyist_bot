@@ -4,6 +4,10 @@
   "consumer_secret" : "Your Consumer secret",
   "access_token" : "Your Access token",
   "access_secret" : "Your Access secret",
+  "tokyo_tyrant" : {
+    "host" : "127.0.0.1",
+    "port" : 1978
+  },
   "keywords" : [
     "ruby",
     "jruby",
