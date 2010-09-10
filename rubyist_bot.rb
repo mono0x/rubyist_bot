@@ -10,21 +10,9 @@ require 'oauth'
 require 'oauth/client/em_http'
 require 'twitter/json_stream'
 
+require_relative 'workaround'
 require_relative 'tweetstorage'
 require_relative 'bayes'
-
-class EventMachine::HttpClient
-  def normalize_uri
-    @normalized_uri ||= begin
-      uri = @uri.dup
-      encoded_query = encode_query(@uri, @options[:query])
-      path, query = encoded_query.split("?", 2)
-      uri.query = query unless encoded_query.empty?
-      uri.path  = path
-      uri
-    end
-  end
-end
 
 class Tracker
 

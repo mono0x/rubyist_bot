@@ -3,24 +3,7 @@
 require 'classifier'
 require 'MeCab'
 
-class String
-
-  private
-
-  def word_hash_for_words(words)
-    d = {}
-    words.each do |word|
-      word.downcase! if word =~ /[\w]+/
-      key = word.stem.force_encoding(Encoding::UTF_8)
-      if word =~ /[^\w]/ || !CORPUS_SKIP_WORDS.include?(word) && word.length > 2
-        d[key] ||= 0
-        d[key] += 1
-      end
-    end
-    d
-  end
-
-end
+require_relative 'workaround'
 
 class Bayes
 
@@ -60,7 +43,7 @@ class Bayes
   private
 
   def parse_text(text)
-    @wakati.parse(text).force_encoding(Encoding::UTF_8)
+    @wakati.parse text
   end
 
 end
