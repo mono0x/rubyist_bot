@@ -10,10 +10,8 @@ class Bayes
   def initialize(file)
     @file = file
     @bayes = if File.exist?(file)
-      @loaded = true
       Marshal.load open(file)
     else
-      @loaded = false
       Classifier::Bayes.new('interesting', 'uninteresting')
     end
     @wakati = MeCab::Tagger.new('-O wakati')
@@ -34,10 +32,6 @@ class Bayes
 
   def classify(text)
     @bayes.classify(parse_text(text)) == 'Interesting'
-  end
-
-  def loaded?
-    @loaded
   end
 
   private

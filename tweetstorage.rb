@@ -10,8 +10,8 @@ class TweetStorage
     @db.open host, port
   end
 
-  def append(status)
-    @db.put status['id'].to_s, { 'status' => status.to_json }
+  def append(data)
+    @db.put data['status']['id'].to_s, { 'status' => data['status'].to_json, 'interesting' => data['interesting'].to_s }
   end
 
   def remove(id)
@@ -24,13 +24,14 @@ class TweetStorage
       q.setlimit 1
       id = q.search[0]
     end
-    s = @db.get(id.to_s)
-    s ? JSON.parse(s['status']) : nil
+    return unless s = @db.get(id.to_s)
+    { 'status' => JSON.parse(s['status']), 'interesting' => s['interesting'] != 'false' }
   end
 
-  def size
+  def search(limit, page = 0)
     q = TokyoTyrant::RDBQRY.new(@db)
-    q.searchcount
+    q.setlimit limit, page * limit
+    q.search.map {|id| get(id) }
   end
 
 end
