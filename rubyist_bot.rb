@@ -10,6 +10,7 @@ require 'oauth/client/em_http'
 require 'sinatra/base'
 require 'sinatra/async'
 require 'erubis'
+require 'logger'
 
 require_relative 'workaround'
 require_relative 'tweetstorage'
@@ -21,10 +22,13 @@ class RubyistBotApplication < Sinatra::Base
   register Sinatra::Async
 
   set :sessions, true
-  set :logging, true
+  set :logging, false
   set :views, "#{File.dirname(__FILE__)}/view"
 
   configure do
+
+    @@logger = Logger.new(STDERR)
+    use Rack::CommonLogger, STDERR
 
     @@config = JSON.parse(open('config.json', 'r:utf-8').read)
 
@@ -75,12 +79,12 @@ class RubyistBotApplication < Sinatra::Base
         end
       end
       tracker.on_error do |m|
-        # m
-        EventMachine.stop if EventMachine.reactor_running?
+        @@logger.info m
+        EventMachine.stop_event_loop if EventMachine.reactor_running?
       end
       tracker.on_max_reconnects do |timeout, retries|
-        # "max reconnects #{timeout} : #{retries}"
-        EventMachine.stop if EventMachine.reactor_running?
+        @@logger.info "max reconnects #{timeout} : #{retries}"
+        EventMachine.stop_event_loop if EventMachine.reactor_running?
       end
     end
 
@@ -102,6 +106,10 @@ class RubyistBotApplication < Sinatra::Base
       @@bayes.save
     end
     redirect '/'
+  end
+
+  get '/restart' do
+    EventMachine.stop_event_loop
   end
 
 end
