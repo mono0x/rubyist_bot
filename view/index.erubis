@@ -11,24 +11,24 @@
     <h1>Rubyist Bot</h1>
     <form method="POST" action="/submit">
       <table>
-        <% tweets.each do |tweet| %><tr>
+        <% statuses.each do |status| %><tr>
           <td>
             <input
               type="hidden"
-              name="tweet[<%= tweet['status']['id'] %>][interesting]"
-              value="<%= tweet['interesting'] %>"
+              name="tweet[<%= status.id %>][interesting]"
+              value="<%= status.interesting %>"
               />
             <input
               type="checkbox"
-              id="tweet-<%= tweet['status']['id'] %>"
-              name="tweet[<%= tweet['status']['id'] %>][checked]"
+              id="tweet-<%= status.id %>"
+              name="tweet[<%= status.id %>][checked]"
               value="true"
-              <%= %!checked="true"! if tweet['interesting'] %>
+              <%= %!checked="true"! if status.interesting %>
               />
           </td>
           <td>
-            <label for="tweet-<%= tweet['status']['id'] %>">
-              <%= tweet['status']['text'] %>
+            <label for="tweet-<%= status.id %>">
+              <%= status.text %>
             </label>
           </td>
         </tr><% end %>

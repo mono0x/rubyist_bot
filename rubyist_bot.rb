@@ -13,7 +13,7 @@ require 'erubis'
 require 'logger'
 
 require_relative 'workaround'
-require_relative 'tweetstorage'
+require_relative 'model'
 require_relative 'bayes'
 require_relative 'tracker'
 require_relative 'similarityfilter'
@@ -44,8 +44,6 @@ class RubyistBotApplication < Sinatra::Base
 
     @@similarity_filter = SimilarityFilter.new(@@config['keywords'], block['similarity']['samples'], block['similarity']['threshold'])
 
-    @@storage = TweetStorage.new(@@config['tokyo_tyrant']['host'], @@config['tokyo_tyrant']['port'])
-
     @@bayes = Bayes.new('bayes.dat')
 
     EventMachine.schedule do
@@ -62,7 +60,7 @@ class RubyistBotApplication < Sinatra::Base
         next unless @@similarity_filter.update(text)
 
         interesting = @@bayes.classify(status['text'])
-        @@storage.append({ 'status' => status, 'interesting' => interesting })
+        Status.first_or_create(:id => status['id'], :text => status['text'], :interesting => interesting)
         next unless interesting
 
         req = EventMachine::HttpRequest.new('http://api.twitter.com/1/users/show.json')
@@ -92,16 +90,16 @@ class RubyistBotApplication < Sinatra::Base
 
   get '/' do
     erubis :index, :locals => {
-      :tweets => @@storage.search(20),
+      :statuses => Status.all(:limit => 20)
     }
   end
 
   post '/submit' do
     if params['tweet']
       params['tweet'].each do |id, data|
-        tweet = @@storage.get(id)
-        @@bayes.append tweet['status']['text'], data['checked'] == 'true'
-        @@storage.remove id
+        status = Status.first(:id => id)
+        @@bayes.append status.text, data['checked'] == 'true'
+        status.destroy
       end
       @@bayes.save
     end
