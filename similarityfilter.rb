@@ -10,7 +10,7 @@ class SimilarityFilter
   end
 
   def update(text)
-    text_without_uri = self.class.remove_uri(text).tr('A-Z', 'a-z').gsub(@keywords_re, '')
+    text_without_uri = text.tr('A-Z', 'a-z').gsub(@keywords_re, '')
     return false if @samples.any? {|t|
       self.class.similarity(t, text_without_uri) > @threshold
     }
@@ -20,10 +20,6 @@ class SimilarityFilter
   end
 
   class << self
-
-    def remove_uri(src)
-      src.gsub %r!https?://.+?(?:/|$|\s|[^\w])!, ''
-    end
 
     def similarity(lhs, rhs)
       max = [lhs.size, rhs.size].max

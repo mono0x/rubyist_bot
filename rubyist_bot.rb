@@ -57,9 +57,11 @@ class RubyistBotApplication < Sinatra::Base
         screen_name = status['user']['screen_name']
         next if screen_name == @@config['account']
         next if block['screen_name'].any?{|n| screen_name[n]}
-        next unless @@similarity_filter.update(text)
+        @@logger.info status
+        plain = text.gsub(%r!https?://.+?(?:/|$|\s|[^\w])!, '')
+        next unless @@similarity_filter.update(plain)
 
-        interesting = @@bayes.classify(status['text'])
+        interesting = @@bayes.classify(plain)
         Status.first_or_create(:id => status['id'], :text => status['text'], :interesting => interesting)
         next unless interesting
 
