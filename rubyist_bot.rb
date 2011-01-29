@@ -65,18 +65,26 @@ class RubyistBotApplication < Sinatra::Base
         Status.first_or_create(:id => status['id'], :text => status['text'], :interesting => interesting)
         next unless interesting
 
-        req = EventMachine::HttpRequest.new('http://api.twitter.com/1/users/show.json')
-        http = req.get(:query => { 'user_id' => status['user']['id'] }) do |client|
+        req = EventMachine::HttpRequest.new("http://api.twitter.com/1/statuses/show/#{status['user']['id']}.json")
+        http = req.get do |client|
           @@consumer.sign! client, @@access_token
         end
-        http.callback do
-          if http.response_header.status == 200
+        callback = Proc.new do
+          if http.response_header.status != 403
             uri = "http://api.twitter.com/1/statuses/retweet/#{status['id']}.json"
             http = EventMachine::HttpRequest.new(uri).post(:head => { 'Content-Type' => 'application/x-www-form-urlencoded' }) do |client|
               @@consumer.sign! client, @@access_token
             end
+            http.callback do
+              @@logger.info http.response_header.inspect
+            end
+            http.errback do
+              @@logger.info http.response_header.inspect
+            end
           end
         end
+        http.callback &callback
+        http.errback &callback
       end
       tracker.on_error do |m|
         @@logger.info m
