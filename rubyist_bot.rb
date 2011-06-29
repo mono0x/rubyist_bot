@@ -86,6 +86,9 @@ class RubyistBotApplication < Sinatra::Base
         http.callback &callback
         http.errback &callback
       end
+      tracker.on_inited do
+        @@logger.info 'inited'
+      end
       tracker.on_error do |m|
         @@logger.info m
         EventMachine.stop_event_loop if EventMachine.reactor_running?
@@ -93,6 +96,12 @@ class RubyistBotApplication < Sinatra::Base
       tracker.on_max_reconnects do |timeout, retries|
         @@logger.info "max reconnects #{timeout} : #{retries}"
         EventMachine.stop_event_loop if EventMachine.reactor_running?
+      end
+      tracker.on_reconnect do |timeout, retries|
+        @@logger.info "reconnect #{timeout} : #{retries}"
+      end
+      tracker.on_close do
+        @@logger.info 'close'
       end
     end
 
