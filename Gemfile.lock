@@ -1,60 +1,68 @@
 GIT
-  remote: https://github.com/eitoball/mecab-ruby.git
-  revision: f0cb713a5b69602241de5282037ab112d3f7c25b
+  remote: https://github.com/datamapper/dm-core.git
+  revision: 25bd9d221d3fc397ec534a3c5e5ef025cdd432eb
+  specs:
+    dm-core (1.1.1)
+      addressable (~> 2.2.4)
+
+GIT
+  remote: https://github.com/datamapper/dm-do-adapter.git
+  revision: 2b5c4355f7dabf9107f54739f2f9710b03da1da4
+  specs:
+    dm-do-adapter (1.1.1)
+      data_objects (~> 0.10.6)
+      dm-core (~> 1.1.1)
+
+GIT
+  remote: https://github.com/mono0x/mecab-ruby.git
+  revision: 4403e1b046bdaef25fd02d494d8e958fb339046d
   specs:
     mecab-ruby (0.98)
 
 GEM
   remote: http://rubygems.org/
   specs:
-    abstract (1.0.0)
-    addressable (2.2.4)
-    async_sinatra (0.4.0)
+    addressable (2.2.6)
+    async_sinatra (0.5.0)
       rack (>= 1.2.1)
       sinatra (>= 1.0)
     classifier (1.3.3)
       fast-stemmer (>= 1.0.0)
-    daemons (1.1.0)
-    data_objects (0.10.2)
+    daemons (1.1.4)
+    data_objects (0.10.6)
       addressable (~> 2.1)
-    dm-core (1.0.2)
-      addressable (~> 2.2)
-      extlib (~> 0.9.15)
-    dm-do-adapter (1.0.2)
-      data_objects (~> 0.10.2)
-      dm-core (~> 1.0.2)
-    dm-sqlite-adapter (1.0.2)
-      dm-do-adapter (~> 1.0.2)
+    dm-sqlite-adapter (1.1.0)
+      dm-do-adapter (~> 1.1.0)
       do_sqlite3 (~> 0.10.2)
-    do_sqlite3 (0.10.2)
-      data_objects (= 0.10.2)
+    do_sqlite3 (0.10.6)
+      data_objects (= 0.10.6)
     em-http-request (0.3.0)
       addressable (>= 2.0.0)
       escape_utils
       eventmachine (>= 0.12.9)
-    erubis (2.6.6)
-      abstract (>= 1.0.0)
-    escape_utils (0.1.9)
+    erubis (2.7.0)
+    escape_utils (0.2.3)
     eventmachine (0.12.10)
-    extlib (0.9.15)
     fast-stemmer (1.0.0)
-    gsl (1.14.5)
+    gsl (1.14.7)
       narray (>= 0.5.9)
+    http_parser.rb (0.5.1)
     narray (0.5.9.9)
-    oauth (0.4.4)
-    rack (1.2.1)
-    roauth (0.0.3)
-    sinatra (1.1.2)
+    oauth (0.4.5)
+    rack (1.3.0)
+    simple_oauth (0.1.5)
+    sinatra (1.2.6)
       rack (~> 1.1)
-      tilt (~> 1.2)
-    thin (1.2.7)
+      tilt (< 2.0, >= 1.2.2)
+    thin (1.2.11)
       daemons (>= 1.0.9)
       eventmachine (>= 0.12.6)
       rack (>= 1.0.0)
-    tilt (1.2.2)
-    twitter-stream (0.1.10)
+    tilt (1.3.2)
+    twitter-stream (0.1.14)
       eventmachine (>= 0.12.8)
-      roauth (>= 0.0.2)
+      http_parser.rb (~> 0.5.1)
+      simple_oauth (~> 0.1.4)
 
 PLATFORMS
   ruby
@@ -62,7 +70,8 @@ PLATFORMS
 DEPENDENCIES
   async_sinatra
   classifier
-  dm-core
+  dm-core!
+  dm-do-adapter!
   dm-sqlite-adapter
   em-http-request
   erubis

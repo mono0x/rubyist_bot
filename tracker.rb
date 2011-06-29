@@ -15,6 +15,7 @@ class Tracker
 
   def start(&block)
     stream = Twitter::JSONStream.connect(
+      :method => 'POST',
       :filters => @track,
       :oauth => {
         :consumer_key => @consumer_token,
