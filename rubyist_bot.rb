@@ -25,6 +25,11 @@ class RubyistBotApplication < Sinatra::Base
   set :logging, false
   set :views, "#{File.dirname(__FILE__)}/view"
 
+  helpers do
+    include Rack::Utils
+    alias h escape_html
+  end
+
   configure do
 
     @@logger = Logger.new(STDERR)
@@ -108,8 +113,10 @@ class RubyistBotApplication < Sinatra::Base
   end
 
   get '/' do
+    p query = params[:q]
     erubis :index, :locals => {
-      :statuses => Status.all(:limit => 20)
+      :query    => query,
+      :statuses => Status.all(:text.like => "%#{query}%", :limit => 20)
     }
   end
 
