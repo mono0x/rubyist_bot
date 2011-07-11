@@ -113,7 +113,7 @@ class RubyistBotApplication < Sinatra::Base
   end
 
   get '/' do
-    p query = params[:q]
+    query = params[:q]
     erubis :index, :locals => {
       :query    => query,
       :statuses => Status.all(:text.like => "%#{query}%", :limit => 20)
