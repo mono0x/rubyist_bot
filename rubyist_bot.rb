@@ -47,6 +47,9 @@ class RubyistBotApplication < Sinatra::Base
 
     block = @@config['block']
 
+    block_word_re = Regexp.union(block['word'].map{|w| /#{w}/i}.to_a)
+    block_screen_name_re = /^#{Regexp.union(block['screen_name'].map{|n| /#{n}/i}.to_a)}$/
+
     @@similarity_filter = SimilarityFilter.new(@@config['keywords'], block['similarity']['samples'], block['similarity']['threshold'])
 
     @@bayes = Bayes.new('bayes.dat')
@@ -58,10 +61,10 @@ class RubyistBotApplication < Sinatra::Base
         next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{@@config['account']}/
         next if text =~ /#\w+/
         next if text.match(/\A(.*?)(?:[RQ]T|\z)/m)[1].size < block['length']
-        next if block['word'].any?{|w| text[w]}
+        next if text =~ block_word_re
         screen_name = status['user']['screen_name']
         next if screen_name == @@config['account']
-        next if block['screen_name'].any?{|n| screen_name[n]}
+        next if screen_name =~ block_screen_name_re
         @@logger.info status
         plain = text.gsub(%r!https?://.+?(?:/|$|\s|[^\w])!, '')
         next unless @@similarity_filter.update(plain)
