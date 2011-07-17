@@ -19,7 +19,7 @@
   "block" : {
     "length" : 50,
     "similarity" : {
-      "samples" : 500,
+      "sample_count" : 500,
       "threshold" : 0.4
     },
     "word" : [],

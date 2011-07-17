@@ -1,143 +1,65 @@
-#!/usr/bin/ruby -Ku
-# coding: utf-8
+# -*- coding: utf-8 -*-
 
-require 'uri'
 require 'json'
-require 'eventmachine'
-require 'em-http'
-require 'oauth'
-require 'oauth/client/em_http'
-require 'sinatra/base'
-require 'sinatra/async'
-require 'erubis'
-require 'logger'
+require 'hashie'
 
-require_relative 'workaround'
-require_relative 'model'
-require_relative 'bayes'
-require_relative 'tracker'
-require_relative 'similarityfilter'
+$LOAD_PATH.push "#{File.dirname(__FILE__)}/lib"
 
-class RubyistBotApplication < Sinatra::Base
-  register Sinatra::Async
+require 'stream'
+require 'statuslogger'
 
-  set :sessions, true
-  set :logging, false
-  set :views, "#{File.dirname(__FILE__)}/view"
+require 'bayesian'
+require 'bayesianfilter'
+require 'blockfilter'
+require 'hashtagfilter'
+require 'hastextfilter'
+require 'japanesefilter'
+require 'lengthfilter'
+require 'retweetfilter'
+require 'similarityfilter'
+require 'wordfilter'
 
-  helpers do
-    include Rack::Utils
-    alias h escape_html
-  end
+config = Hashie::Mash.new(JSON.parse(open('config/config.json').read))
 
-  configure do
+bayesian = Bayesian.new(:path => 'data/bayesian.dat')
 
-    @@logger = Logger.new(STDERR)
-    use Rack::CommonLogger, STDERR
+consumer = OAuth::Consumer.new(
+  config.consumer_token,
+  config.consumer_secret,
+  :site => 'https://api.twitter.com')
 
-    @@config = JSON.parse(open('config.json', 'r:utf-8').read)
+access_token = OAuth::AccessToken.new(
+  consumer,
+  config.access_token,
+  config.access_secret)
 
-    use Rack::Auth::Basic do |account, password|
-      basic_auth = @@config['basic_auth']
-      account == basic_auth['account'] && password == basic_auth['password']
-    end
+stream_consumer = OAuth::Consumer.new(
+  config.consumer_token,
+  config.consumer_secret,
+  :site => 'http://stream.twitter.com')
 
-    @@consumer = OAuth::Consumer.new(@@config['consumer_token'], @@config['consumer_secret'])
-    @@access_token = OAuth::AccessToken.new(@@consumer, @@config['access_token'], @@config['access_secret'])
+stream_access_token = OAuth::AccessToken.new(
+  stream_consumer,
+  config.access_token,
+  config.access_secret)
 
-    block = @@config['block']
+filters = [
+  HasTextFilter.new,
+  RetweetFilter.new,
+  JapaneseFilter.new,
+  HashtagFilter.new,
+  LengthFilter.new(:length => config.block.text_length),
+  WordFilter.new(:text => config.block.word, :screen_name => config.block.screen_name),
+  SimilarityFilter.new(:keywords => config.keywords, :sample_count => config.block.similarity.sample_count, :threshold => config.block.similarity.threshold),
+  StatusLogger.new,
+  BayesianFilter.new(:bayesian => bayesian),
+  BlockFilter.new(consumer, access_token),
+]
 
-    block_word_re = Regexp.union(block['word'].map{|w| /#{w}/i}.to_a)
-    block_screen_name_re = /^#{Regexp.union(block['screen_name'].map{|n| /#{n}/i}.to_a)}$/
+rubytter = OAuthRubytter.new(access_token)
 
-    @@similarity_filter = SimilarityFilter.new(@@config['keywords'], block['similarity']['samples'], block['similarity']['threshold'])
-
-    @@bayes = Bayes.new('bayes.dat')
-
-    EventMachine.schedule do
-      tracker = Tracker.new(@@config['consumer_token'], @@config['consumer_secret'], @@config['access_token'], @@config['access_secret'], @@config['keywords'])
-      tracker.start do |status|
-        text = status['text']
-        next unless text && text =~ /\p{Hiragana}|\p{Katakana}/ && text !~ /\@#{@@config['account']}/
-        next if text =~ /#\w+/
-        next if text.match(/\A(.*?)(?:[RQ]T|\z)/m)[1].size < block['length']
-        next if text =~ block_word_re
-        screen_name = status['user']['screen_name']
-        next if screen_name == @@config['account']
-        next if screen_name =~ block_screen_name_re
-        @@logger.info status
-        plain = text.gsub(%r!https?://.+?(?:/|$|\s|[^\w])!, '')
-        next unless @@similarity_filter.update(plain)
-
-        interesting = @@bayes.classify(plain)
-        Status.first_or_create(:id => status['id'], :text => status['text'], :interesting => interesting)
-        next unless interesting
-
-        req = EventMachine::HttpRequest.new("https://api.twitter.com/1/statuses/show/#{status['user']['id']}.json")
-        http = req.get do |client|
-          @@consumer.sign! client, @@access_token
-        end
-        callback = Proc.new do
-          if http.response_header.status != 403
-            uri = "https://api.twitter.com/1/statuses/retweet/#{status['id']}.json"
-            http = EventMachine::HttpRequest.new(uri).post(:head => { 'Content-Type' => 'application/x-www-form-urlencoded' }) do |client|
-              @@consumer.sign! client, @@access_token
-            end
-            http.callback do
-              @@logger.info http.response_header.inspect
-            end
-            http.errback do
-              @@logger.info http.response_header.inspect
-            end
-          end
-        end
-        http.callback &callback
-        http.errback &callback
-      end
-      tracker.on_inited do
-        @@logger.info 'inited'
-      end
-      tracker.on_error do |m|
-        @@logger.info m
-        EventMachine.stop_event_loop if EventMachine.reactor_running?
-      end
-      tracker.on_max_reconnects do |timeout, retries|
-        @@logger.info "max reconnects #{timeout} : #{retries}"
-        EventMachine.stop_event_loop if EventMachine.reactor_running?
-      end
-      tracker.on_reconnect do |timeout, retries|
-        @@logger.info "reconnect #{timeout} : #{retries}"
-      end
-      tracker.on_close do
-        @@logger.info 'close'
-      end
-    end
-
-  end
-
-  get '/' do
-    query = params[:q]
-    erubis :index, :locals => {
-      :query    => query,
-      :statuses => Status.all(:text.like => "%#{query}%", :limit => 20)
-    }
-  end
-
-  post '/submit' do
-    if params['tweet']
-      params['tweet'].each do |id, data|
-        status = Status.first(:id => id)
-        @@bayes.append status.text, data['checked'] == 'true'
-        status.destroy
-      end
-      @@bayes.save
-    end
-    redirect '/'
-  end
-
-  get '/restart' do
-    EventMachine.stop_event_loop
-  end
-
+Stream.new(stream_consumer, stream_access_token).filter(config.keywords) do |status|
+  next unless filters.all? {|f| f.match status }
+  rubytter.retweet status.id
 end
 

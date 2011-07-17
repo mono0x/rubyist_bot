@@ -1,23 +1,6 @@
 # -*- coding: utf-8 -*-
 
-class SimilarityFilter
-
-  def initialize(keywords, sample_count, threshold)
-    @keywords_re = Regexp.union(keywords.map{|k| /#{k}/i})
-    @samples = []
-    @sample_count = sample_count
-    @threshold = threshold
-  end
-
-  def update(text)
-    text_without_uri = text.tr('A-Z', 'a-z').gsub(@keywords_re, '')
-    return false if @samples.any? {|t|
-      self.class.similarity(t, text_without_uri) > @threshold
-    }
-    @samples.shift if @samples.size >= @sample_count
-    @samples.push text_without_uri
-    true
-  end
+class Similarity
 
   class << self
 
@@ -25,8 +8,6 @@ class SimilarityFilter
       max = [lhs.size, rhs.size].max
       max > 0 ? 1.0 - levenshtein_distance(lhs, rhs).to_f / max : 1.0
     end
-
-    private
 
     def levenshtein_distance(lhs, rhs)
       width = lhs.size + 1
