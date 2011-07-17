@@ -5,6 +5,7 @@ require 'hashie'
 
 $LOAD_PATH.push "#{File.dirname(__FILE__)}/lib"
 
+require 'configloader'
 require 'stream'
 require 'statuslogger'
 
@@ -19,7 +20,7 @@ require 'retweetfilter'
 require 'similarityfilter'
 require 'wordfilter'
 
-config = Hashie::Mash.new(JSON.parse(open('config/config.json').read))
+config = ConfigLoader.load
 
 bayesian = Bayesian.new(:path => 'data/bayesian.dat')
 
