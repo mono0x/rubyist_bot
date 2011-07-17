@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# This module is based on userstream
+# https://github.com/mitukiii/userstream
 
 require 'rubytter'
 require 'json'
