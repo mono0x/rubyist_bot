@@ -12,6 +12,7 @@ require 'statuslogger'
 require 'bayesian'
 require 'bayesianfilter'
 require 'blockfilter'
+require 'continuouspostfilter'
 require 'hashtagfilter'
 require 'hastextfilter'
 require 'japanesefilter'
@@ -60,6 +61,7 @@ class RubyistBot
       SimilarityFilter.new(:keywords => @config.keywords, :sample_count => @config.block.similarity.sample_count, :threshold => @config.block.similarity.threshold),
       StatusLogger.new,
       BayesianFilter.new(:bayesian => @bayesian),
+      ContinuousPostFilter.new(:interval => @config.block.continuous_interval),
       BlockFilter.new(@consumer, @access_token),
     ]
 
