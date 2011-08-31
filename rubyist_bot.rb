@@ -44,7 +44,7 @@ class RubyistBot
     @stream_consumer = OAuth::Consumer.new(
       @config.consumer_token,
       @config.consumer_secret,
-      :site => 'http://stream.twitter.com')
+      :site => 'https://stream.twitter.com')
 
     @stream_access_token = OAuth::AccessToken.new(
       @stream_consumer,
