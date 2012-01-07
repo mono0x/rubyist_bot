@@ -25,11 +25,8 @@ GEM
     do_sqlite3 (0.10.7)
       data_objects (= 0.10.7)
     fast-stemmer (1.0.0)
-    gsl (1.14.7)
-      narray (>= 0.5.9)
     hashie (1.2.0)
-    json (1.6.1)
-    narray (0.6.0.1)
+    json (1.6.4)
     oauth (0.4.5)
     rubytter (1.4.2)
       json (>= 1.1.3)
@@ -45,7 +42,6 @@ DEPENDENCIES
   dm-do-adapter
   dm-migrations
   dm-sqlite-adapter
-  gsl
   hashie
   mecab-ruby!
   rubytter
