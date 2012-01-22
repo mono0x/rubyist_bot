@@ -4,9 +4,9 @@
   "consumer_secret" : "Your Consumer secret",
   "access_token" : "Your Access token",
   "access_secret" : "Your Access secret",
-  "basic_auth" : {
+  "bitly" : {
     "account" : "",
-    "password" : ""
+    "api_key" : ""
   },
   "keywords" : [
     "ruby",

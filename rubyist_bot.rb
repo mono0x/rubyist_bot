@@ -2,6 +2,9 @@
 
 require 'json'
 require 'hashie'
+require 'bitly'
+
+Bitly.use_api_version_3
 
 $LOAD_PATH.push "#{File.dirname(__FILE__)}/lib"
 
@@ -20,6 +23,8 @@ require 'lengthfilter'
 require 'retweetfilter'
 require 'similarityfilter'
 require 'wordfilter'
+
+require 'statusgenerator'
 
 class RubyistBot
 
@@ -66,6 +71,10 @@ class RubyistBot
     ]
 
     @rubytter = OAuthRubytter.new(@access_token)
+
+    @bitly = Bitly::V3::Client.new(@config.bitly.account, @config.bitly.api_key)
+
+    @generator = StatusGenerator.new(:bitly => @bitly)
   end
 
   def run
@@ -75,7 +84,7 @@ class RubyistBot
 
     Stream.new(@stream_consumer, @stream_access_token).filter(@config.keywords) do |status|
       next unless @filters.all? {|f| f.match status }
-      @rubytter.retweet status.id
+      @rubytter.update @generator.generate(status)
     end
   end
 

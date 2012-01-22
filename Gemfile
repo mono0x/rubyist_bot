@@ -9,4 +9,5 @@ gem 'dm-do-adapter'
 gem 'dm-migrations'
 gem 'dm-sqlite-adapter'
 gem 'thor'
+gem 'bitly'
 
