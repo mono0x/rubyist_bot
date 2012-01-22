@@ -83,6 +83,7 @@ class RubyistBot
     end
 
     Stream.new(@stream_consumer, @stream_access_token).filter(@config.keywords) do |status|
+      STDERR.puts status.inspect
       next unless @filters.all? {|f| f.match status }
       @rubytter.update @generator.generate(status)
     end
